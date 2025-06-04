@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastShip - Shipment Tracking</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Sedgwick+Ave+Display&display=swap');
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f2f2f2;
+            font-family: "Manrope";
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .shipment {
+            --padding: 30px;
+            position: relative;
+            width: 90vw;
+            max-width: 560px;
+            margin: 40px auto;
+            padding: var(--padding);
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            background-color: white;
+
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .status {
+            position: absolute;
+            right: var(--padding);
+            top: var(--padding);
+            padding: .5em 1em;
+            border-radius: 1em;
+            color: #545454;
+            font-weight: 500;
+            background-color: #f2f2f2;
+        }
+
+        .img-container {
+            width: 80px;
+            height: 80px;
+            background-color: #f2f2f2;
+            border-radius: 20px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .img-container>svg {
+            width: 60%;
+            height: 60%;
+            color: #545454;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .detail {
+            font-weight: 500;
+        }
+
+        h4 {
+            margin-bottom: .4em;
+            font-size: 14px;
+            font-weight: inherit;
+            color: hsl(0, 0%, 50%);
+        }
+
+        p {
+            font-size: 16px;
+            color: black;
+        }
+
+        .timeline {
+            margin-left: 10px;
+        }
+
+        .event {
+            --padding-left: 40px;
+            position: relative;
+            border-left: 1px solid grey;
+            padding-left: var(--padding-left);
+            padding-bottom: 20px;
+        }
+
+        .event:last-child {
+            border: none;
+        }
+
+        .event .title-wrapper {
+            position: relative;
+            font-size: 16px;
+            margin-bottom: .5em;
+        }
+
+        .event h3 {
+            font-weight: 500;
+        }
+
+        .event .dot {
+            --size: 8px;
+
+            position: absolute;
+            top: calc(50% - (var(--size)/2));
+            left: calc(var(--padding-left) * -1 - (var(--size)/2));
+            width: var(--size);
+            height: var(--size);
+            border-radius: 50%;
+            background-color: black;
+            outline: 10px solid white;
+        }
+
+        .event>p {
+            color: #545454;
+            margin-bottom: .5em;
+        }
+
+        .event>p>span {
+            color: #999;
+        }
+
+        
+    </style>
+    <style>
+    /* Status Colors */
+        .placed {
+            color: hsl(35, 100%, 20%);
+            background-color: hsl(35, 75%, 80%);
+        }
+
+        .in_transit {
+            color: hsl(43, 100%, 20%);
+            background-color: hsl(43, 75%, 80%);
+        }
+
+        .out_for_delivery {
+            color: hsl(78, 100%, 20%);
+            background-color: hsl(78, 75%, 80%);
+        }
+
+        .delivered {
+            color: hsl(98, 100%, 20%);
+            background-color: hsl(98, 75%, 80%);
+        }
+
+        .cancelled {
+            color: hsl(0, 0%, 20%);
+            background-color: hsl(0, 0%, 80%);
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div class="shipment">
+            <div class="status {{ status.value }}">{{ status.value }}</div>
+            <div class="img-container">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg>
+            </div>
+            <h2>Order #{{ id.hex[-10:] }}</h2>
+            <div class="details">
+                <div class="detail">
+                    <h4>Content</h4>
+                    <p>{{ content.title() }}</p>
+                </div>
+                <div class="detail">
+                    <h4>Carrier</h4>
+                    <p>{{ partner }}</p>
+                </div>
+                <div class="detail">
+                    <h4>Started At</h4>
+                    <p>{{ created_at.strftime("%d-%m-%Y %H:%M") }}</p>
+                </div>
+                <div class="detail">
+                    <h4>Estimated Delivery</h4>
+                    <p>{{ estimated_delivery.strftime("%d-%m-%Y %H:%M") }}</p>
+                </div>
+            </div>
+            <h4 style="margin-top: 20px;">Order History</h4>
+            <div class="timeline">
+                {% for event in timeline %}
+                    <div class="event">
+                        <div class="title-wrapper">
+                            <div class="dot"></div>
+                            <h3>{{ event.status.value.replace("_", " ").title() }}</h3>
+                        </div>
+                        <p><span>{{ event.created_at.strftime("%d-%m-%Y %H:%M") }}</span> {{ event.description }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

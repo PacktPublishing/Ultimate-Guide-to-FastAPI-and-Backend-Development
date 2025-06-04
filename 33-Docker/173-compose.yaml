@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    environment:
+      POSTGRES_SERVER: db
+      REDIS_HOST: redis
+    expose:
+      - 8000
+    command: ["fastapi", "run", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - celery
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "strong"
+      POSTGRES_DB: "fastship"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    command: redis-server --appendonly yes
+    volumes:
+      - ./redis_data:/data
+
+  celery:
+    build: .
+    command: ["celery", "-A", "app.worker.tasks", "worker", "--loglevel=info"]
+    environment:
+      REDIS_HOST: redis
